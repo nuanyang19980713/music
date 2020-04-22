@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+  <title>Document</title>
+  <!-- 样式 -->
+  <link rel="stylesheet" href="./css/index.css">
+</head>
+
+<body>
+  <div class="wrap" ref="discover">
+    <div class="play_wrap" id="player">
+      <div class="search_bar">
+        <img src="images/player_title.png" alt="" />
+        <!-- 搜索歌曲 -->
+        <input type="text" autocomplete="off" v-model="query" @keyup.enter="searchMusic" />
+      </div>
+      <div class="center_con">
+        <!-- 搜索歌曲列表 -->
+        <div class='song_wrapper'>
+          <ul class="song_list">
+            <li v-for="(item,index) in musicList" :key="index">
+              <!-- 点击放歌 -->
+              <a href="javascript:;" @click="playMusic(item.id)"></a>
+              <b>{{item.name}}</b>
+              <span v-show="item.mvid" @click="playMv(item.mvid)">
+                <i ></i>
+              </span>
+            </li>
+
+          </ul>
+          <img src="images/line.png" class="switch_btn" alt="">
+        </div>
+        <!-- 歌曲信息容器 -->
+        <div class="player_con" ref="aimate" :class="{playing: isPlaying}">
+          <img src="images/player_bar.png" class="play_bar" />
+          <!-- 黑胶碟片 -->
+          <img src="images/disc.png" class="disc autoRotate" />
+          <img :src="coverUrl==''?'./images/cover.png':coverUrl" class="cover autoRotate" />
+        </div>
+        <!-- 评论容器 -->
+        <div class="comment_wrapper">
+          <h5 class='title'>热门留言</h5>
+          <div class='comment_list'>
+
+            <div>
+              <dl  v-for="(item,index) in comment_list" :key="index">
+                <dt>
+                  <img alt="" :src="item.user.avatarUrl">
+                </dt>
+                <dd class="name">{{item.user.nickname}}</dd>
+                <dd class="detail">
+                  {{item.content}}
+                </dd>
+              </dl>
+            
+            </div>
+          </div>
+          <img src="images/line.png" class="right_line">
+        </div>
+      </div>
+      <div class="audio_con">
+        <audio v-on:play="play" v-on:pause="pause" controls autoplay loop class="myaudio" :src="musicSrc"></audio>
+      </div>
+      <div class="video_con" v-if="video_isPlay">
+        <video  controls="controls" :src="mvUrl"></video>
+        <div class="mask" @click="closeMV"></div>
+      </div>
+    </div>
+  </div>
+  <!-- 开发环境版本，包含了有帮助的命令行警告 -->
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  <!-- 官网提供的 axios 在线地址 -->
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script type="text/javascript">
+   axios.defaults.baseURL = 'https://autumnfish.cn';
+        let vm = new Vue({
+          el: "#player",
+          data:{
+            query: '',
+            musicList: [],
+            musicSrc: '',
+            coverUrl: "",
+            comment_list: [],
+            avtorSrc: "",
+            isPlaying: false,
+            video_isPlay: false,
+            mvUrl: "",
+          
+          },
+          methods: {
+            searchMusic: function() {
+              axios.get('/search?keywords='+this.query)
+              .then(response =>{
+                  console.log(response.data.result.songs);
+                  this.musicList = response.data.result.songs;
+              },err=>{
+                console.log(err);
+              })
+            },
+            playMusic: function(id) {
+
+              //  console.log(id)
+              axios.get('/song/url?id='+id).then(response=>{
+                  // console.log(response.data.data[0].url);
+                  this.musicSrc = response.data.data[0].url;
+              })
+              .catch(err=>{
+                console.log(err);
+              })
+              axios.get('/song/detail?ids='+id).then(response=>{
+                  console.log(response.data.songs[0].al.picUrl);
+                  this.coverUrl = response.data.songs[0].al.picUrl;
+              },err=>{
+                console.log(err);
+              })
+              axios.get('/comment/music?id='+id).then(response=>{
+                    // console.log(response.data.comments)
+                    this.comment_list = response.data.comments;
+              },err=>{
+                console.log(err);
+              })
+            }
+           ,play: function(){
+             this.isPlaying = true
+          },
+          pause: function() {
+            this.isPlaying = false
+          },
+          playMv: function(mvid) {
+            console.log(mvid);
+            axios.get('/mv/url?id='+mvid)
+            .then(response=>{
+              // console.log(response.data.data.url);
+              this.mvUrl = response.data.data.url;
+              this.video_isPlay = true;
+            },err=>{
+              console.log(err);
+            })
+          },
+          closeMV: function() {
+            this.video_isPlay = false;
+          }
+          },
+        })
+  </script>
+</body>
+
+</html>
